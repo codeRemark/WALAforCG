@@ -21,6 +21,7 @@ import java.util.Set;
 import java.util.function.Predicate;
 
 import com.ibm.wala.classLoader.IClass;
+import com.ibm.wala.classLoader.IField;
 import com.ibm.wala.classLoader.IMethod;
 import com.ibm.wala.examples.properties.WalaExamplesProperties;
 import com.ibm.wala.ipa.callgraph.AnalysisCacheImpl;
@@ -43,6 +44,7 @@ import com.ibm.wala.ipa.cha.ClassHierarchyFactory;
 import com.ibm.wala.ipa.cha.IClassHierarchy;
 import com.ibm.wala.properties.WalaProperties;
 import com.ibm.wala.types.ClassLoaderReference;
+import com.ibm.wala.types.FieldReference;
 import com.ibm.wala.types.TypeReference;
 import com.ibm.wala.util.WalaException;
 import com.ibm.wala.util.collections.CollectionFilter;
@@ -57,7 +59,7 @@ import com.ibm.wala.util.io.CommandLine;
 import com.ibm.wala.util.strings.StringStuff;
 import com.ibm.wala.util.warnings.Warnings;
 import com.ibm.wala.viz.DotUtil;
-
+import com.ibm.wala.shrikeCT.ClassReader.AttrIterator;
 
 /**
  * Driver that constructs a call graph for an application specified via a scope file.  
@@ -99,10 +101,49 @@ public class ScopeFileCallGraph2 {
     
     for (String scopeFile : scopeFileList) {
       try {
+        
+        //support additional parse
+        Properties q = null;
+        try {
+          q = WalaExamplesProperties.loadProperties();
+          q.putAll(WalaProperties.loadProperties());
+        } catch (WalaException e) {
+          e.printStackTrace();
+          Assertions.UNREACHABLE();
+        }
+        //create dot dir 
+        String subdir = scopeFile.replaceAll("\\\\","/").split("/")[3];
+        //create subdir
+        String path_str = q.getProperty(WalaProperties.OUTPUT_DIR) + File.separatorChar + subdir;
+        File path = new File(path_str);
+        if (!path.exists()) { //目录不存在
+          path.mkdirs();  //创建一个
+        }
+        else {  //目录存在
+          System.out.println("dt dir exist, jump!");
+          continue;  //跳过，处理下一个scope文件
+        }
+        
         // use exclusions to eliminate certain library packages
         File exclusionsFile = new File("I:\\project\\WALA1\\WALA\\com.ibm.wala.core.tests\\dat\\Java60RegressionExclusions.txt");   //xxx
         AnalysisScope scope = AnalysisScopeReader.readJavaScope(scopeFile, exclusionsFile, ScopeFileCallGraph.class.getClassLoader());
         IClassHierarchy cha = ClassHierarchyFactory.make(scope);
+        
+        for (IClass klass : cha) {
+
+          if (klass.getClassLoader().getReference().equals(scope.getApplicationLoader())) {
+            for (IField field : klass.getDeclaredInstanceFields()) {
+              FieldReference fieldReference = field.getReference();
+//              IAnalysisCacheView cache = new AnalysisCacheImpl(options.getSSAOptions());
+//              cache.getDefUse(ir)
+              System.out.println(fieldReference.getSignature());
+              AttrIterator iter = new AttrIterator();
+              
+              
+            }
+          }
+      }
+        
         System.out.println(cha.getNumberOfClasses() + " classes");
         System.out.println(Warnings.asString());
         Warnings.clear();
@@ -154,22 +195,8 @@ public class ScopeFileCallGraph2 {
             System.out.println();
             continue;
           }
-          Properties q = null;
-          try {
-            q = WalaExamplesProperties.loadProperties();
-            q.putAll(WalaProperties.loadProperties());
-          } catch (WalaException e) {
-            e.printStackTrace();
-            Assertions.UNREACHABLE();
-          }
-          
-          String subdir = scopeFile.replaceAll("\\\\","/").split("/")[3];
-          //create subdir
-          String path_str = q.getProperty(WalaProperties.OUTPUT_DIR) + File.separatorChar + subdir;
-          File path = new File(path_str);
-          if (!path.exists()) {
-            path.mkdirs();
-          }
+         
+
           String pdfFile = path_str + File.separatorChar + PDF_FILE;
           String dotFile = path_str + File.separatorChar + DOT_FILE;
 
@@ -184,9 +211,14 @@ public class ScopeFileCallGraph2 {
         e.printStackTrace();
       } catch (IOException e) {
         e.printStackTrace();
-      }
-      System.out.println("process finished!");
+      } catch(NullPointerException e) {
+        e.printStackTrace();      
+      } catch(ArrayIndexOutOfBoundsException e) {
+        e.printStackTrace();
     }
+      
+    }
+    System.out.println("process finished!");
    }
 
   private static String PDF_FILE = "cg.pdf";
@@ -289,7 +321,8 @@ public class ScopeFileCallGraph2 {
     File file = new File(path);
     File[] files = file.listFiles();
     for(int i = 0; i < files.length; i++) {
-      if (files[i].isFile()) {
+      String fileName = files[i].getName();
+      if (files[i].isFile() && fileName.substring(fileName.lastIndexOf(".") + 1).equals("txt")) {
         listFileName.add(files[i].toString());
       }
       else if (files[i].isDirectory()) {

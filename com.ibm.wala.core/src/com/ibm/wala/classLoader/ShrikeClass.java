@@ -16,11 +16,14 @@ import java.util.List;
 
 import com.ibm.wala.ipa.cha.IClassHierarchy;
 import com.ibm.wala.shrikeBT.Constants;
+
 import com.ibm.wala.shrikeCT.AnnotationsReader;
 import com.ibm.wala.shrikeCT.AnnotationsReader.AnnotationType;
 import com.ibm.wala.shrikeCT.ClassConstants;
 import com.ibm.wala.shrikeCT.ClassReader;
+import com.ibm.wala.shrikeCT.ConstantPoolParser;
 import com.ibm.wala.shrikeCT.ClassReader.AttrIterator;
+//import com.ibm.wala.shrikeCT.ConstantValueReader;
 import com.ibm.wala.shrikeCT.InnerClassesReader;
 import com.ibm.wala.shrikeCT.InvalidClassFileException;
 import com.ibm.wala.shrikeCT.SignatureReader;
@@ -69,6 +72,7 @@ public final class ShrikeClass extends JVMClass<IClassLoader> {
     computeModifiers();
     computeInterfaceNames();
     computeFields();
+
   }
 
   /**
@@ -87,6 +91,22 @@ public final class ShrikeClass extends JVMClass<IClassLoader> {
         int accessFlags = cr.getFieldAccessFlags(i);
         Atom name = Atom.findOrCreateUnicodeAtom(cr.getFieldName(i));
         ImmutableByteArray b = ImmutableByteArray.make(cr.getFieldType(i));
+        
+        //xxx 获得field常量值
+//        String fieldValue = "";
+//        ClassReader.AttrIterator attrs = new ClassReader.AttrIterator();
+//        cr.initFieldAttributeIterator(i, attrs);
+//
+//        for (; attrs.isValid(); attrs.advance()) {
+//          String attrName = attrs.getName();
+//          System.out.println("  " + name + ": @" + Integer.toString(attrs.getRawOffset(), 16) + "\n");
+//          if (attrName.equals("ConstantValue")) {
+//            ConstantValueReader cv = new ConstantValueReader(attrs);
+//            fieldValue = getCPItemString(cr.getCP(), cv.getValueCPIndex());
+//            System.out.println("    value: " + fieldValue + "\n");
+//          }
+//        }
+        //xxx
         Collection<Annotation> annotations = HashSetFactory.make();
         annotations.addAll(getRuntimeInvisibleAnnotations(i));
         annotations.addAll(getRuntimeVisibleAnnotations(i));
@@ -123,6 +143,91 @@ public final class ShrikeClass extends JVMClass<IClassLoader> {
     }
   }
 
+  private static String getCPItemString(ConstantPoolParser cp, int i) throws InvalidClassFileException {
+    int t = cp.getItemType(i);
+    switch (t) {
+    case ClassConstants.CONSTANT_Utf8:
+      return "Utf8 " + quoteString(cp.getCPUtf8(i));
+    case ClassConstants.CONSTANT_Class:
+      return "Class " + cp.getCPClass(i);
+    case ClassConstants.CONSTANT_String:
+      return "String " + quoteString(cp.getCPString(i));
+    case ClassConstants.CONSTANT_Integer:
+      return "Integer " + cp.getCPInt(i);
+    case ClassConstants.CONSTANT_Float:
+      return "Float " + cp.getCPFloat(i);
+    case ClassConstants.CONSTANT_Double:
+      return "Double " + cp.getCPDouble(i);
+    case ClassConstants.CONSTANT_Long:
+      return "Long " + cp.getCPLong(i);
+    case ClassConstants.CONSTANT_MethodRef:
+      return "Method " + cp.getCPRefClass(i) + " " + cp.getCPRefName(i) + " " + cp.getCPRefType(i);
+    case ClassConstants.CONSTANT_FieldRef:
+      return "Field " + cp.getCPRefClass(i) + " " + cp.getCPRefName(i) + " " + cp.getCPRefType(i);
+    case ClassConstants.CONSTANT_InterfaceMethodRef:
+      return "InterfaceMethod " + cp.getCPRefClass(i) + " " + cp.getCPRefName(i) + " " + cp.getCPRefType(i);
+    case ClassConstants.CONSTANT_NameAndType:
+      return "NameAndType " + cp.getCPNATType(i) + " " + cp.getCPNATName(i);
+    default:
+      return "Unknown type " + t;
+    }
+  }
+  
+  private static String quoteString(String string) {
+    StringBuffer buf = new StringBuffer();
+    buf.append('"');
+    for (int i = 0; i < string.length(); i++) {
+      char ch = string.charAt(i);
+      switch (ch) {
+      case '\r':
+        buf.append("\\r");
+        break;
+      case '\n':
+        buf.append("\\n");
+        break;
+      case '\\':
+        buf.append("\\\\");
+        break;
+      case '\t':
+        buf.append("\\t");
+        break;
+      case '\"':
+        buf.append("\\\"");
+        break;
+      default:
+        if (ch >= 32 && ch <= 127) {
+          buf.append(ch);
+        } else {
+          buf.append("\\u");
+          String h = makeHex(new byte[] { (byte) (ch >> 8), (byte) ch }, 0, 2, 0);
+          for (int j = 4 - h.length(); j > 0; j--) {
+            buf.append('0');
+          }
+          buf.append(h);
+        }
+      }
+    }
+    buf.append('"');
+    return buf.toString();    
+  }
+  
+  private static final char[] hexChars = { '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F' };
+  
+  private static String makeHex(byte[] bytes, int pos, int len, int padTo) {
+    StringBuffer b = new StringBuffer();
+    for (int i = pos; i < pos + len; i++) {
+      byte v = bytes[i];
+      b.append(hexChars[(v >> 4) & 0xF]);
+      b.append(hexChars[v & 0xF]);
+    }
+    while (b.length() < padTo) {
+      b.append(' ');
+    }
+    return b.toString();
+  }
+  
+  
+  
   /**
    * @throws InvalidClassFileException
    */

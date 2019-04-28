@@ -24,7 +24,7 @@ import com.ibm.wala.util.collections.ComposedIterator;
 import com.ibm.wala.util.collections.FilterIterator;
 import com.ibm.wala.util.collections.MapIterator;
 import com.ibm.wala.util.collections.Pair;
-import com.ibm.wala.util.debug.Assertions;
+
 
 /**
  * An instance key which represents a unique set for each concrete type.
@@ -36,9 +36,10 @@ public final class ConcreteTypeKey implements InstanceKey {
     if (type == null) {
       throw new IllegalArgumentException("type is null");
     }
-    if (type.isInterface()) {
-      Assertions.UNREACHABLE("unexpected interface: " + type);
-    }
+    //xxx
+//    if (type.isInterface()) {
+//      Assertions.UNREACHABLE("unexpected interface: " + type);
+//    }
     this.type = type;
   }
 

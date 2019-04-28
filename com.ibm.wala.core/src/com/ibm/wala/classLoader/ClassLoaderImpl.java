@@ -155,6 +155,7 @@ public class ClassLoaderImpl implements IClassLoader {
     }
     HashSet<ModuleEntry> result = HashSetFactory.make();
     for (ModuleEntry entry : Iterator2Iterable.make(M.getEntries())) {
+      System.out.println(entry.toString());
       if (DEBUG_LEVEL > 0) {
         System.err.println("ClassLoaderImpl.getClassFiles:Got entry: " + entry);
       }
@@ -257,7 +258,7 @@ public class ClassLoaderImpl implements IClassLoader {
         continue;
       }
 
-      ShrikeClassReaderHandle entryReader = new ShrikeClassReaderHandle(entry);
+      ShrikeClassReaderHandle entryReader = new ShrikeClassReaderHandle(entry); //跳过
 
       className = "L" + className;
       if (DEBUG_LEVEL > 0) {
@@ -279,7 +280,7 @@ public class ClassLoaderImpl implements IClassLoader {
               reader = new ByteArrayReaderHandle(entry, (byte[]) contents);
             }
           }
-          ShrikeClass tmpKlass = new ShrikeClass(reader, this, cha);
+          ShrikeClass tmpKlass = new ShrikeClass(reader, this, cha); //进入
           if (tmpKlass.getReference().getName().equals(T)) {
             // always used the reader based on the entry after this point,
             // so we can null out and re-read class file contents
@@ -515,7 +516,7 @@ public class ClassLoaderImpl implements IClassLoader {
         // }
         // jarFileContents = null;
       }
-      loadAllClasses(classFiles, allClassAndSourceFileContents);
+      loadAllClasses(classFiles, allClassAndSourceFileContents); //加载所有类内容
       loadAllSources(sourceFiles);
       for (ModuleEntry file : classFiles) {
         classModuleEntries.add(file);

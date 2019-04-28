@@ -53,7 +53,7 @@ public class SourceDirCallGraph1 {
 	    
 	    //add 路径 H:\\data\\source1\\galaxy-1.4\\galaxy-1.4\\src\\main\\java\\co\\paralleluniverse\\common\\logging
 	    // H:\\data\\source1\\log4j-1_2_17\\src\\main\\java\\org\\apache\\log4j
-	    sourceDir = "H:\\data\\source1\\log4j-1_2_17\\log4j-1_2_17\\src";
+	    sourceDir = "H:\\data\\temp\\source1\\Froyo_Email\\src";
 	    //mainClass = "LSimple1";  //Simple1 Lfoo/bar/hello/world/InnerClasses
 	    
 	    AnalysisScope scope = new JavaSourceAnalysisScope();
@@ -62,11 +62,11 @@ public class SourceDirCallGraph1 {
 	    for (String stdlib : stdlibs) {
 	      scope.addToScope(ClassLoaderReference.Primordial, new JarFile(stdlib));
 	    }
-	    String appDir = "H:\\data\\source1\\log4j-1_2_17\\log4j-1_2_17\\lib";
-	    String[] applibs = WalaProperties.getJarsInDirectory(appDir);
-	    for (String applib : applibs) {
-	      scope.addToScope(ClassLoaderReference.Primordial, new JarFile(applib));
-	    }
+//	    String appDir = "H:\\data\\source1\\log4j-1_2_17\\log4j-1_2_17\\lib";
+//	    String[] applibs = WalaProperties.getJarsInDirectory(appDir);
+//	    for (String applib : applibs) {
+//	      scope.addToScope(ClassLoaderReference.Primordial, new JarFile(applib));
+//	    }
 	    
 	    ExampleUtil.addDefaultExclusions(scope);	//增加无效lib库的裁减
 	    //ExampleUtil.addTailExclusions(scope);	//增加无效类的剪切
